@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WANG CHUNLEI - Digital Portfolio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
+        :root { --accent: #00FFFF; --bg-dark: #000000; --panel-bg: rgba(255, 255, 255, 0.05); }
+        body, html { margin: 0; padding: 0; background-color: var(--bg-dark); color: white; font-family: 'Inter', "Microsoft YaHei", sans-serif; overflow: hidden; height: 100%; }
+        #bg-canvas { position: fixed; top: 0; left: 0; z-index: 0; pointer-events: none; }
+        .snap-container { height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; position: relative; z-index: 10; }
+        section { min-height: 100vh; width: 100%; scroll-snap-align: start; padding: 40px 24px; display: flex; flex-direction: column; position: relative; box-sizing: border-box; }
+        
+        /* 扫描线动效 */
+        .scanline { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--accent), transparent); position: absolute; top: 0; left: 0; animation: scan 4s linear infinite; opacity: 0.2; z-index: 5; }
+        @keyframes scan { from { top: 0%; } to { top: 100%; } }
+
+        /* 右侧侧边导航 */
+        .side-nav { position: fixed; right: 8px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 15px; z-index: 100; padding: 10px 5px; background: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); }
+        .nav-dot { width: 4px; height: 15px; background: rgba(255,255,255,0.2); border-radius: 2px; cursor: pointer; transition: all 0.3s; }
+        .nav-dot.active { background: var(--accent); height: 30px; box-shadow: 0 0 10px var(--accent); }
+
+        .nav-tile { background: var(--panel-bg); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; transition: all 0.3s ease; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; }
+        .nav-tile:active { transform: scale(0.95); background: rgba(0, 255, 255, 0.1); border-color: var(--accent); }
+
+        /* 通用卡片抽屉逻辑 */
+        .agent-card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; margin-bottom: 12px; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; max-height: 85px; flex-shrink: 0; }
+        .agent-card.expanded { max-height: 3000px; background: rgba(0, 255, 255, 0.05); border-color: rgba(0, 255, 255, 0.3); }
+        .card-header { padding: 18px 20px; display: flex; justify-content: space-between; align-items: flex-start; cursor: pointer; }
+        .card-content { padding: 0 20px 24px 20px; opacity: 0; transition: opacity 0.3s; }
+        .expanded .card-content { opacity: 1; }
+        
+        .expand-icon { width: 18px; height: 18px; position: relative; transition: transform 0.3s ease; flex-shrink: 0; }
+        .expand-icon::before, .expand-icon::after { content: ''; position: absolute; background: var(--accent); top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .expand-icon::before { width: 10px; height: 2px; }
+        .expand-icon::after { width: 2px; height: 10px; transition: opacity 0.3s; }
+        .expanded .expand-icon::after { opacity: 0; }
+
+        .tag { font-size: 8px; padding: 2px 6px; border-radius: 4px; background: rgba(0, 255, 255, 0.1); color: var(--accent); border: 1px solid rgba(0, 255, 255, 0.2); font-family: monospace; white-space: nowrap; }
+        .accent-text { color: var(--accent); text-shadow: 0 0 15px rgba(0, 255, 255, 0.6); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .section-title {
+            font-size: 14px;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #cbd5e1;
+            text-shadow: 0 0 12px rgba(0, 255, 255, 0.35);
+            border-left: 2px solid rgba(0, 255, 255, 0.45);
+            padding-left: 10px;
+            line-height: 1.25;
+        }
+        .copy-btn {
+            font-size: 9px;
+            color: var(--accent);
+            border: 1px solid rgba(0, 255, 255, 0.35);
+            background: rgba(0, 255, 255, 0.08);
+            border-radius: 999px;
+            padding: 3px 10px;
+            font-family: monospace;
+            letter-spacing: 0.08em;
+            transition: all 0.2s ease;
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.35);
+        }
+        .copy-toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: rgba(0, 0, 0, 0.82);
+            color: #fff;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 999px;
+            padding: 7px 14px;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.25s ease;
+            z-index: 999;
+        }
+        .copy-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        #particle-container { touch-action: pan-y !important; }
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: #00FFFF; box-shadow: 0 0 8px #00FFFF; margin-top: -4px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 2px; background: rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="side-nav">
+        <div class="nav-dot active" onclick="scrollToSection('home')"></div>
+        <div class="nav-dot" onclick="scrollToSection('agent')"></div>
+        <div class="nav-dot" onclick="scrollToSection('skills')"></div>
+        <div class="nav-dot" onclick="scrollToSection('experience')"></div>
+        <div class="nav-dot" onclick="scrollToSection('love')"></div>
+        <div class="nav-dot" onclick="scrollToSection('about')"></div>
+    </div>
+
+    <div class="snap-container" id="main-container">
+        <section id="home">
+            <div class="scanline"></div>
+            <div class="mt-10 mb-6">
+                <p class="text-[9px] tracking-[0.3em] text-gray-500 mb-2 uppercase font-mono">我突然想多了解你一点</p>
+                <h1 class="text-5xl font-black tracking-tighter leading-tight">
+                    <span>王春雷</span><br>
+                    <span class="accent-text italic">WANGCHUNLEI</span>
+                </h1>
+                <div class="flex gap-2 mt-6">
+                    <span class="text-[9px] border border-gray-700 px-2 py-1 text-gray-500">12年经验</span>
+                    <span class="text-[9px] border border-cyan-900/50 px-2 py-1 text-cyan-500">增长专家</span>
+                    <span class="text-[9px] border border-gray-700 px-2 py-1 text-gray-500">INTP-J</span>
+                    <span class="text-[9px] border border-gray-700 px-2 py-1 text-gray-500">善用AI</span>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mt-4">
+                
+                <div class="nav-tile h-28" onclick="scrollToSection('agent')">
+                    <span class="text-lg font-bold text-cyan-400">Agent</span>
+                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">我可以做什么</span>
+                </div>
+                <div class="nav-tile h-28" onclick="scrollToSection('skills')">
+                    <span class="text-lg font-bold text-cyan-400">SKILL</span>
+                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">我有哪些技能</span>
+                </div>
+                <div class="nav-tile h-28" onclick="scrollToSection('experience')">
+                    <span class="text-lg font-bold text-cyan-400">MEMORY.md</span>
+                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">过往履历</span>
+                </div>
+                <div class="nav-tile h-28" onclick="scrollToSection('love')">
+                    <span class="text-lg font-bold text-cyan-400">100 ℃</span>
+                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">我的热爱</span>
+                </div>
+                <div class="nav-tile h-20 col-span-2" onclick="scrollToSection('about')">
+                    <span class="text-lg font-bold text-cyan-400">README</span>
+                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">关于我</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="agent" class="no-scrollbar overflow-y-auto">
+            <h2 class="section-title mb-6">Agent（我可以做什么）</h2>
+            
+            <div class="agent-card" onclick="toggleCard(this)">
+                <div class="card-header"><div class="flex flex-col gap-1"><h3 class="text-white text-sm font-bold">Agent1：投放增长</h3><div class="flex gap-1 flex-wrap"><span class="tag">AARRR</span><span class="tag">主自运营</span><span class="tag">亿级预算</span></div></div><div class="expand-icon mt-1"></div></div>
+                <div class="card-content text-[11px] text-gray-400 leading-relaxed space-y-4 border-t border-white/5 pt-4">
+                    <p>精通AARRR用户增长模型，能够结合产品特性，推动内部联动做适合产品属性的渠道增长策略。</p>
+                    <p>擅长渠道：移动端：信息流（字节巨量、快手磁力、腾讯广点通）、厂商（华为、O、V、小米、荣耀、ASA）、百度。</p>
+                    <p>PC端：SEM（百度、360、bing、搜狗）、PC厂商联运、下载站和导航站CPA&amp;CPS。</p>
+                    <p class="text-white font-bold">爆款机器（素材）：自己做过公众号、短视频号，能轻松打造高播放视频，深度理解推流逻辑，善用冲突、利他、制造槽点、陷阱、反常理、造网感。</p>
+                </div>
+            </div>
+
+            <div class="agent-card" onclick="toggleCard(this)">
+                <div class="card-header"><div class="flex flex-col gap-1"><h3 class="text-white text-sm font-bold">Agent2：数据分析</h3><div class="flex gap-1 flex-wrap"><span class="tag">Mysql初级</span><span class="tag">BI建设</span><span class="tag">漏斗分析</span></div></div><div class="expand-icon mt-1"></div></div>
+                <div class="card-content text-[11px] text-gray-400 leading-relaxed space-y-3 border-t border-white/5 pt-4">
+                    <p>数据会说话，擅长数据分析、看板建设、根据产品转化漏斗排查与优化各节点转化率。</p>
+                    <p>曾在创业公司因数据分析需要，自学过Mysql可以进行基础数据查找。</p>
+                    <p>从0—1推动数据中台产品搭建渠道BI报表建设，结合聊天工具能力，定制自动化机器人数据提醒与预警。</p>
+                    <p>推动产品打通前后端转化漏斗埋点，分析漏斗情况，寻找提升CVR转化的新机会点。</p>
+                </div>
+            </div>
+
+            <div class="agent-card" onclick="toggleCard(this)">
+                <div class="card-header"><div class="flex flex-col gap-1"><h3 class="text-white text-sm font-bold">Agent3：商务BD</h3><span class="tag w-fit">指哪打哪</span></div><div class="expand-icon mt-1"></div></div>
+                <div class="card-content text-[11px] text-gray-400 leading-relaxed space-y-3 border-t border-white/5 pt-4">
+                    <p>贷款业务对接100+商务渠道，进行API合作增长，如贷超、贷款平台、机构等。</p>
+                    <p>保险业务对接多个短信运营商渠道，进行API效果化定点投放获客。</p>
+                    <p>工具业务开过电商店铺卖会员，对接如超级App的联合会员、运营商、联运、AI应用、垂类网站合作等。</p>
+                    <p>B端业务作为解决方案专家推动AIGC合作，对接过如天猫、抖音、识货、SHEIN、阿里国际站等多个头部电商平台，以及安踏、特步、鸿星尔克等头部品牌和智己汽车等汽车品牌，累计超过200家。</p>
+                </div>
+            </div>
+
+            <div class="agent-card" onclick="toggleCard(this)">
+                <div class="card-header"><div class="flex flex-col gap-1"><h3 class="text-white text-sm font-bold">Agent4：擅用AI</h3><span class="tag w-fit">懂得都懂</span></div><div class="expand-icon mt-1"></div></div>
+                <div class="card-content text-[11px] text-gray-400 leading-relaxed space-y-4 border-t border-white/5 pt-4 font-mono">
+                    <p>平时会用AI做一些提效和分析的工作。</p>
+                    <p>AIGC刚兴起时，自己配置过秋叶大神的 Web UI（Stable Diffusion），后来也玩过 MJ、ComfyUI。</p>
+                    <p>现在养了3只龙虾，Token烧不起，有一个本地部署的 Qwen27b 模型，平时乱玩。</p>
+                    <p>最近改养马了（Hermes），这个记忆能力强，烧Token是龙虾的一半。</p>
+                    <p>编程会用 Corsur，觉得这个好用点，Codex最近也装了，还没咋用。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="skills" class="no-scrollbar overflow-y-auto">
+            <h2 class="section-title mb-8">Skill（我有哪些技能）</h2>
+            <div class="space-y-8">
+                <div class="space-y-4">
+                    <h3 class="text-[9px] text-cyan-500 font-mono tracking-widest">// CREATIVE & DEV</h3>
+                    <div class="skill-item">
+                        <div class="flex justify-between text-[10px] mb-1 font-mono uppercase"><span class="text-white">剪映</span><span class="text-cyan-400">90%</span></div>
+                        <div class="h-[2px] bg-white/10 rounded-full overflow-hidden"><div class="h-full bg-cyan-400 shadow-[0_0_8px_#00FFFF]" style="width: 90%"></div></div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="flex justify-between text-[10px] mb-1 font-mono uppercase"><span class="text-white">PS</span><span class="text-cyan-400">70%</span></div>
+                        <div class="h-[2px] bg-white/10 rounded-full overflow-hidden"><div class="h-full bg-cyan-400 shadow-[0_0_8px_#00FFFF]" style="width: 70%"></div></div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="flex justify-between text-[10px] mb-1 font-mono uppercase"><span class="text-white">Cursor</span><span class="text-cyan-400">50%</span></div>
+                        <div class="h-[2px] bg-white/10 rounded-full overflow-hidden"><div class="h-full bg-cyan-400/60" style="width: 50%"></div></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 pt-1">
+                        <div><p class="text-[8px] text-gray-500 mb-1 font-mono">MySQL 20%</p><div class="h-[1px] bg-white/10"><div class="h-full bg-gray-400" style="width: 20%"></div></div></div>
+                        <div><p class="text-[8px] text-gray-500 mb-1 font-mono">HTML 20%</p><div class="h-[1px] bg-white/10"><div class="h-full bg-gray-400" style="width: 20%"></div></div></div>
+                        <div><p class="text-[8px] text-gray-500 mb-1 font-mono">Python 10%</p><div class="h-[1px] bg-white/10"><div class="h-full bg-gray-400" style="width: 10%"></div></div></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-white/5 border border-white/10 p-3 rounded-lg"><p class="text-[8px] text-gray-500 mb-1">ComfyUI</p><p class="text-sm font-black text-cyan-400">70%</p><div class="h-[2px] bg-cyan-400/20 mt-2"><div class="h-full bg-cyan-400" style="width: 70%"></div></div></div>
+                    <div class="bg-white/5 border border-white/10 p-3 rounded-lg"><p class="text-[8px] text-gray-500 mb-1">WebUI</p><p class="text-sm font-black text-cyan-400">70%</p><div class="h-[2px] bg-cyan-400/20 mt-2"><div class="h-full bg-cyan-400" style="width: 70%"></div></div></div>
+                    <div class="bg-white/5 border border-white/10 p-3 rounded-lg"><p class="text-[8px] text-gray-500 mb-1">OpenClaw</p><p class="text-sm font-black text-cyan-400">80%</p><div class="h-[2px] bg-cyan-400/20 mt-2"><div class="h-full bg-cyan-400" style="width: 80%"></div></div></div>
+                    <div class="bg-white/5 border border-white/10 p-3 rounded-lg"><p class="text-[8px] text-gray-500 mb-1">Hermes Agent</p><p class="text-sm font-black text-cyan-400">80%</p><div class="h-[2px] bg-cyan-400/20 mt-2"><div class="h-full bg-cyan-400" style="width: 80%"></div></div></div>
+                </div>
+                <div class="bg-white/5 border border-cyan-500/20 rounded-xl p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <p class="text-[9px] text-cyan-400 font-mono tracking-widest uppercase">MBTI Radar</p>
+                        <span class="tag">INTP</span>
+                    </div>
+                    <div class="relative h-56">
+                        <canvas id="mbti-radar" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="experience" class="no-scrollbar overflow-y-auto">
+            <h2 class="section-title mb-8">Memory.md（我的过往经历）</h2>
+            <div class="border-l border-gray-800 ml-2 pl-6 space-y-6 relative">
+                
+                <div class="agent-card !mb-0" onclick="toggleCard(this)">
+                    <div class="card-header">
+                        <div class="absolute -left-[31px] top-6 w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_10px_#00FFFF]"></div>
+                        <div class="flex flex-col gap-1">
+                            <h3 class="text-white text-xs font-bold leading-tight">北京美图之家科技有限公司</h3>
+                            <p class="text-[9px] text-cyan-500 font-mono">2021/12-至今 | 渠道经理</p>
+                            <div class="flex gap-1 flex-wrap mt-1">
+                                <span class="tag !bg-cyan-500 !text-black font-bold shadow-[0_0_8px_#00FFFF]">美图设计室</span>
+                                <span class="tag !bg-cyan-500 !text-black font-bold shadow-[0_0_8px_#00FFFF]">美图秀秀</span>
+                                <span class="tag">AIGC</span><span class="tag">B端</span><span class="tag">投放获客</span><span class="tag">商务BD</span>
+                            </div>
+                        </div><div class="expand-icon mt-2"></div>
+                    </div>
+                    <div class="card-content text-[11px] text-gray-400 leading-relaxed space-y-3 border-t border-white/5 pt-4">
+                        <p>1. 作为项目Owner负责美图AI类Toc、Tob产品三端（PC客户端+web端+app端）对外的获客增长，明确不同阶段的核心指标（激活、留存、付费转化等），年投放规模5kw-亿级。</p>
+                        <p>2. 有多个应用从0—1获客经验，单应用获客新增占比超过60%，助力应用月活超千万。</p>
+                        <p>3. 管理国内主流广告平台投放及异业合作（如巨量、广点通、快手、百度、小红书、厂商商店、联运及异业CPA、CPS合作）。</p>
+                        <p>4. 0-1搭建投放获客数据分析板块，根据数据分析报告驱动优化决策，定制监控面板与提醒，提升优化效率。</p>
+                        <p>5. 优化转化漏斗，推动产、运、研针对渠道定制化落地页、商业化策略、DP直达等玩法，提升CVR转化。</p>
+                        <p>6. 针对产品画像，设计投放素材，通过利他、冲突、制造槽点等手段提升素材CTR转化，减少相关性偏离，延长素材跑量周期，定期维护人群定向与排除。</p>
+                        <p>7. 有Tob业务解决方案经验，因公司需要对接Tob业务做解决方案，与国内&amp;跨境各大电商平台与头部电商品牌合作共创，获客头部电商平台的多个创新应用奖项，能因需要适应公司的动态调配与角色转变。</p>
+                    </div>
+                </div>
+
+                <div class="agent-card !mb-0" onclick="toggleCard(this)">
+                    <div class="card-header">
+                        <div class="absolute -left-[31px] top-6 w-2 h-2 rounded-full bg-gray-500"></div>
+                        <div class="flex flex-col gap-1">
+                            <h3 class="text-white text-xs font-bold leading-tight">奇虎360金融</h3>
+                            <p class="text-[9px] text-gray-500 font-mono">2020/02-2021/10 | 流量运营主管</p>
+                            <div class="flex gap-1 flex-wrap mt-1">
+                                <span class="tag !bg-white/20 !text-white font-bold shadow-[0_0_5px_rgba(255,255,255,0.3)]">360保险</span>
+                                <span class="tag">保险投放</span><span class="tag">日消百万</span>
+                            </div>
+                        </div><div class="expand-icon mt-2"></div>
+                    </div>
+                    <div class="card-content text-[11px] text-gray-400 leading-relaxed space-y-3 border-t border-white/5 pt-4">
+                        <p>1. 统筹：负责保险业务线上流量投放获客，关注广告消费和投放效果，监控获客成本和用户质量。合作投放媒体（头条系/快手/腾讯系、互动类、CPA/CPS、SEM），统筹日耗百万级账户。</p>
+                        <p>2. 策略：深挖获客，分析保险用户属性，针对性优化投放策略；与媒体进行RTA等深度对接，分析用户从曝光-点击、点击-下单行为，定向触达目标用户提升转化。优化回传策略，从OCPM-OCPS；为保证件均、续费和ROI，配合投放调整产品架构，多方式测试引导算法抓取目标人群推送。针对穿山甲等联盟类渠道，从CID-UID定向挖掘潜力联盟媒体，规避作弊风险，并定期维护定投与排除人群，帮助算法精准定位。</p>
+                        <p>3. 内部：转化率项目中，分析页面转化漏斗与外部竞品，联合产品研究转化流失并迭代页面版本，保证转化率；续费率项目中，根据算法策略做多年龄分层定向产品推荐，保证续费和件均；联盟项目中，推进对外后台上线，对接MarketAPI渠道和未对接渠道进行数据采集与展示，打通前后端数据，帮助前端精细化运营。</p>
+                        <p>4. CPA/CPS渠道搭建联盟系统，对于有一定数据潜力渠道建模、样本挖掘、分析用户；与算法团队配合做LTV预估和反作弊监控，提前对渠道投放情况进行数据指导调整，控制件均并保证续费。</p>
+                        <p>5. 对于营销断点数据分析，与厂商合作定制化短信Push方案，提升短信打开与点击。</p>
+                        <p>6. 外部：与代理、媒体端保持高效沟通，根据数据表现调整投放策略，了解竞品动态、媒体动向和新资源形式，协调测试保证投放效果。</p>
+                        <p>7. 数据分析：流量跟踪工具BI系统，辅助工具Tableau平台，对数据进行多维度跟踪分析。</p>
+                        <p>8. 定期总结复盘，根据环境变化调整投放策略。</p>
+                    </div>
+                </div>
+
+                <div class="agent-card !mb-0" onclick="toggleCard(this)">
+                    <div class="card-header">
+                        <div class="absolute -left-[31px] top-6 w-2 h-2 rounded-full bg-gray-600"></div>
+                        <div class="flex flex-col gap-1">
+                            <h3 class="text-white text-xs font-bold leading-tight">北京融三六零信息技术有限公司</h3>
+                            <p class="text-[9px] text-gray-600 font-mono">2017/11-2019/11 | 流量运营推广</p>
+                            <div class="flex gap-1 flex-wrap mt-1">
+                                <span class="tag !bg-white/20 !text-white font-bold shadow-[0_0_5px_rgba(255,255,255,0.3)]">融360</span>
+                                <span class="tag">贷款超市</span><span class="tag">商务BD</span><span class="tag">日消百万</span>
+                            </div>
+                        </div><div class="expand-icon mt-2"></div>
+                    </div>
+                    <div class="card-content text-[11px] text-gray-400 leading-relaxed space-y-3 border-t border-white/5 pt-4">
+                        <p>1. 市场投放业务及竞品分析：关注市场流量动态，挖掘贷款流量投放渠道和媒体资源，维系媒体关系；关注竞品投放动态，分析市场现状，制定投放策略。</p>
+                        <p>2. 用户模型建立：与产品RD对接，结合产品特点及用户属性，通过数据分析及用户特点制定用户模型定位。</p>
+                        <p>3. 流量布局：优质渠道/媒体深入合作对接挖掘精准流量，常规渠道稳步优化提升，新拓渠道根据投放效果持续监控。</p>
+                        <p>4. 数据分析：流量跟踪工具BI系统，辅助工具MDP平台，对数据进行多维度跟踪分析。</p>
+                        <p>5. 产品优化：参与产品优化会议，搭建AARRR增长模型，重点对获客部分进行优化和调整，并关注整个链路转化过程。</p>
+                        <p>6. 渠道拓展：拓展招标优质渠道，跟进渠道投放效果，维护媒体和渠道关系获取最新流量动态，定期进行渠道结算。</p>
+                        <p>7. 联盟金融客平台负责人：搭建联盟平台，挖掘中小企业和个人站长、公众号、头条号、百家号、企鹅号等线上及线下裂变式增长渠道。</p>
+                        <p>8. 参与搭建合伙人裂变式增长平台：分佣模式邀请贷款和信用卡合伙人，裂变式推广信用卡和贷款产品，进行CPA和CPS形式分佣合作。</p>
+                        <p>9. 垂直类金融合作：各大助贷产品贷款尾量、贷款超市及大流量平台贷款icon入口接入。</p>
+                        <p>10. 异业场景类合作：沟通异业平台进行贷款产品分成模式合作对接。</p>
+                        <p>11. 云业务合作：阿里云和腾讯云合作对接。</p>
+                        <p>12. 线下市场调研：近距离接触用户，了解用户实际需求、疑虑、用户常用软件和与竞品优劣势对比，优化投放和发掘新投放方向。</p>
+                        <p>13. 常规市场投放方向包括：信息流广告（头条类、广点通、朋友圈、陌陌及其他媒体信息流广告位）、短视频信息流（抖音、快手、刷宝等）；互动类广告（推啊、豆盟、互动推、xmob等）；厂商类（小米、oppo、vivo、华为、百手、360、IOS积分墙等）；其他合作还包括汽车、支付、社交、小说、电商购物等。</p>
+                        <p>14. 分月、季、年进行复盘，总结归纳投放情况，制定和调整投放计划。</p>
+                    </div>
+                </div>
+
+                <div class="agent-card !mb-0" onclick="toggleCard(this)">
+                    <div class="card-header">
+                        <div class="absolute -left-[31px] top-6 w-2 h-2 rounded-full bg-gray-700"></div>
+                        <div class="flex flex-col gap-1">
+                            <h3 class="text-white text-xs font-bold leading-tight">北京老顽童信息技术有限公司</h3>
+                            <p class="text-[9px] text-gray-700 font-mono">2017/03-2017/11 | 用户增长</p>
+                            <div class="flex gap-1 flex-wrap mt-1">
+                                <span class="tag !bg-white/10 !text-white/60 font-bold">就爱广场舞</span>
+                                <span class="tag">创业公司</span><span class="tag">用增</span>
+                            </div>
+                        </div><div class="expand-icon mt-2"></div>
+                    </div>
+                    <div class="card-content text-[11px] text-gray-400 leading-relaxed space-y-3 border-t border-white/5 pt-4">
+                        <p>1. 负责用户整个生命周期的运维增长。</p>
+                        <p>2. 获客投放：通过各大应用市场、ASO、腾讯系、头条系广告后台投放进行流量获取。</p>
+                        <p>3. 激发活跃：收集竞品信息，参与App产品迭代优化，引导用户在App内活跃。</p>
+                        <p>4. 留存指标监控：配合用户运营部门提高用户留存，优化产品体验，通过Push活动调起老用户。</p>
+                        <p>5. 流量变现：搭建除电商外的流量变现方式，通过API或JS对接DSP等平台进行流量变现。</p>
+                        <p>6. 推荐：通过金币任务方式引导用户进行App内外分享推荐。</p>
+                        <p>7. 同时负责PUGC运维、上传输出，包括各大平台自媒体号分发输出（头条、大鱼、百家、企鹅）。</p>
+                    </div>
+                </div>
+
+                <div class="agent-card !mb-0" onclick="toggleCard(this)">
+                    <div class="card-header">
+                        <div class="absolute -left-[31px] top-6 w-2 h-2 rounded-full bg-gray-800"></div>
+                        <div class="flex flex-col gap-1">
+                            <h3 class="text-white text-xs font-bold leading-tight">北京微创时代广告有限公司</h3>
+                            <p class="text-[9px] text-gray-800 font-mono">2016/01-2017/02 | 广告投放</p>
+                            <div class="flex gap-1 flex-wrap mt-1">
+                                <span class="tag !bg-white/10 !text-white/40 font-bold">代理公司</span>
+                                <span class="tag">乙方代投</span>
+                            </div>
+                        </div><div class="expand-icon mt-2"></div>
+                    </div>
+                    <div class="card-content text-[11px] text-gray-400 leading-relaxed space-y-3 border-t border-white/5 pt-4">
+                        <p>1. 对接广告主：负责各大广告主在厂商类媒体、效果类媒体的广告投放效果监控和优化。</p>
+                        <p>2. 对接媒体：负责对接媒体包括小米、oppo、vivo、华为、百手、360等厂商运营和商务，了解新的广告投放形式和投放策略。</p>
+                        <p>3. 对接效果类：广点通、朋友圈广告、360导航、头条新闻信息流等。</p>
+                        <p>4. 对接ASO上游渠道，为广告主进行IOS积分墙及机刷合作。</p>
+                        <p>5. 对接二级代理商，对接代理商广告投放需求。</p>
+                        <p>6. 优化分析：对不同广告主的投放情况进行监测分析，出投放数据分析报告，优化成本完成广告主成本考核要求。</p>
+                        <p>7. 对广告投放效果进行监控，定期对投放渠道进行评估，剔除无效渠道、无效关键词，优化账户，确定投放方向。</p>
+                        <p>8. 每周、每月、每季度完成关键词广告分析报告和计划，并总结优化方案和测试数据，提出优化方案及建议。</p>
+                    </div>
+                </div>
+
+                <div class="agent-card !mb-0" onclick="toggleCard(this)">
+                    <div class="card-header">
+                        <div class="absolute -left-[31px] top-6 w-2 h-2 rounded-full bg-gray-900"></div>
+                        <div class="flex flex-col gap-1">
+                            <h3 class="text-white text-xs font-bold leading-tight opacity-50">百度时代网络技术有限公司</h3>
+                            <p class="text-[8px] text-gray-700 font-mono">2013/06-2015/12 | 推广顾问</p>
+                            <div class="flex gap-1 flex-wrap mt-1">
+                                <span class="tag !bg-white/5 !text-white/20 font-bold">百度大搜</span>
+                                <span class="tag">SEM推广</span>
+                            </div>
+                        </div><div class="expand-icon mt-2"></div>
+                    </div>
+                    <div class="card-content text-[11px] text-gray-500 leading-relaxed space-y-3 border-t border-white/5 pt-4">
+                        <p>1． 负责拓展百度推广客户，百度北分业务线年度TOP。</p>
+                        <p>2． 搭建团队，完成公司下达业绩指标，兼职培训讲师，负责新员工业务线培训。</p>
+                        <p>3． 负责大部疑难客户的推广投放，为客户制定SEM投放方案。</p>
+                        <p>4． 根据客户行业及淡旺季，分别制定最合适客户的投放优化方案，提升客户推广效果。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="love" class="relative overflow-hidden p-0 flex flex-col">
+            <h2 class="section-title absolute top-10 left-6 z-50">100 ℃我的热爱</h2>
+            <div id="particle-container" class="w-full flex-grow relative touch-none">
+                <canvas id="three-canvas" class="w-full h-full"></canvas>
+            </div>
+            <div class="glass-card mx-6 -mt-16 mb-6 relative z-50 space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-[9px] font-mono text-cyan-400">// PTCL_V7_STABLE</span>
+                    <div class="flex gap-3">
+                        <input type="color" id="particle-color" value="#00FFFF" class="w-4 bg-transparent border-none p-0 cursor-pointer">
+                        <input type="color" id="bg-color" value="#000000" class="w-4 bg-transparent border-none p-0 cursor-pointer">
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[8px] font-mono text-gray-500"><span>Density</span><span id="density-val">6000</span></div>
+                    <input type="range" id="density-slider" min="500" max="10000" step="500" value="6000" class="w-full h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer">
+                </div>
+                <div class="flex items-center gap-3 border-t border-white/5 pt-3">
+                    <span class="text-[8px] font-mono text-gray-500">SYMBOL:</span>
+                    <input type="text" id="char-input" value="王春雷" class="bg-white/5 border border-white/10 text-[10px] px-2 py-1 rounded text-cyan-400 w-full outline-none">
+                </div>
+                <div class="grid grid-cols-3 gap-2 mt-2">
+                    <button class="nav-tile py-2 text-[9px] font-bold" onclick="updateShape('玩AI')">玩AI</button>
+                    <button class="nav-tile py-2 text-[9px] font-bold" onclick="updateShape('滑雪')">滑雪</button>
+                    <button class="nav-tile py-2 text-[9px] font-bold" onclick="updateShape('路亚')">路亚</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="no-scrollbar overflow-y-auto">
+            <h2 class="section-title mb-8">README（关于我）</h2>
+            <div class="space-y-4">
+                <div class="agent-card expanded !max-h-none !mb-0">
+                    <div class="card-header !cursor-default">
+                        <div class="flex flex-col gap-2">
+                            <p class="text-[9px] tracking-[0.25em] text-gray-500 uppercase font-mono">Who Am I</p>
+                            <h3 class="text-white text-2xl font-black tracking-tight">王春雷</h3>
+                            <div class="flex gap-1 flex-wrap">
+                                <span class="tag">12年10个月</span>
+                                <span class="tag">北京</span>
+                                <span class="tag">在职看机会</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-content !opacity-100 text-[12px] text-gray-300 leading-relaxed space-y-3 border-t border-white/5 pt-4">
+                        <p><span class="text-gray-500 font-mono mr-2">年龄:</span><span class="text-white">37</span></p>
+                        <p><span class="text-gray-500 font-mono mr-2">工作时间:</span><span class="text-white">12年10个月</span></p>
+                        <p><span class="text-gray-500 font-mono mr-2">定位:</span><span class="text-white">北京</span></p>
+                        <p><span class="text-gray-500 font-mono mr-2">状态:</span><span class="text-cyan-400">在职，看看新机会</span></p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="bg-white/5 border border-cyan-500/20 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-[8px] text-gray-500 font-mono tracking-widest uppercase">Call Me</p>
+                            <div class="flex items-center gap-2">
+                                <a class="copy-btn" href="tel:15001113609">拨打</a>
+                                <button class="copy-btn" onclick="copyContact('15001113609', '电话已复制')">复制</button>
+                            </div>
+                        </div>
+                        <p class="text-base font-bold text-white">15001113609</p>
+                    </div>
+                    <div class="bg-white/5 border border-cyan-500/20 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-[8px] text-gray-500 font-mono tracking-widest uppercase">Email</p>
+                            <button class="copy-btn" onclick="copyContact('508208898@qq.com', '邮箱已复制')">复制</button>
+                        </div>
+                        <p class="text-sm font-bold text-white break-all">508208898@qq.com</p>
+                    </div>
+                    <div class="bg-white/5 border border-cyan-500/20 rounded-xl p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-[8px] text-gray-500 font-mono tracking-widest uppercase">WX</p>
+                            <button class="copy-btn" onclick="copyContact('benxi829435', '微信号已复制')">复制</button>
+                        </div>
+                        <p class="text-base font-bold text-white">benxi829435</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="copy-toast" class="copy-toast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+
+    <script>
+        function scrollToSection(id) { const target = document.getElementById(id); if(target) document.getElementById('main-container').scrollTo({ top: target.offsetTop, behavior: 'smooth' }); }
+        function toggleCard(el) { const isExp = el.classList.contains('expanded'); document.querySelectorAll('.agent-card').forEach(c => c.classList.remove('expanded')); if(!isExp) el.classList.add('expanded'); }
+        let copyToastTimer = null;
+        function showCopyToast(message) {
+            const toast = document.getElementById('copy-toast');
+            if (!toast) return;
+            toast.textContent = message;
+            toast.classList.add('show');
+            if (copyToastTimer) clearTimeout(copyToastTimer);
+            copyToastTimer = setTimeout(() => toast.classList.remove('show'), 1400);
+        }
+        function copyContact(text, successMsg) {
+            if (!navigator.clipboard) {
+                showCopyToast('当前浏览器不支持复制');
+                return;
+            }
+            navigator.clipboard.writeText(text)
+                .then(() => showCopyToast(successMsg || '已复制'))
+                .catch(() => showCopyToast('复制失败，请手动复制'));
+        }
+
+        function drawMbtiRadar() {
+            const canvas = document.getElementById('mbti-radar');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const parent = canvas.parentElement;
+            const w = parent.clientWidth;
+            const h = parent.clientHeight;
+            if (!w || !h) return;
+
+            canvas.width = w;
+            canvas.height = h;
+            ctx.clearRect(0, 0, w, h);
+
+            const labels = ['外向(E)', '感觉(S)', '情感(F)', '判断(J)', '内向(I)', '直觉(N)', '思考(T)', '感知(P)'];
+            // INTP 常见倾向：I/N/T/P 偏高，E/S/F/J 偏低（用于可视化表达）
+            const values = [28, 22, 26, 32, 72, 78, 74, 68];
+            const levels = 5;
+            const centerX = w / 2;
+            const centerY = h / 2;
+            const radius = Math.min(w, h) * 0.34;
+            const angleStep = (Math.PI * 2) / labels.length;
+            const startAngle = -Math.PI / 2;
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.16)';
+            ctx.lineWidth = 1;
+            for (let level = 1; level <= levels; level++) {
+                const r = radius * (level / levels);
+                ctx.beginPath();
+                for (let i = 0; i < labels.length; i++) {
+                    const angle = startAngle + i * angleStep;
+                    const x = centerX + Math.cos(angle) * r;
+                    const y = centerY + Math.sin(angle) * r;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+
+            for (let i = 0; i < labels.length; i++) {
+                const angle = startAngle + i * angleStep;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+
+            ctx.beginPath();
+            for (let i = 0; i < values.length; i++) {
+                const ratio = values[i] / 100;
+                const angle = startAngle + i * angleStep;
+                const x = centerX + Math.cos(angle) * radius * ratio;
+                const y = centerY + Math.sin(angle) * radius * ratio;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(0,255,255,0.22)';
+            ctx.strokeStyle = 'rgba(0,255,255,0.95)';
+            ctx.lineWidth = 2;
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#00FFFF';
+            for (let i = 0; i < values.length; i++) {
+                const ratio = values[i] / 100;
+                const angle = startAngle + i * angleStep;
+                const x = centerX + Math.cos(angle) * radius * ratio;
+                const y = centerY + Math.sin(angle) * radius * ratio;
+                ctx.beginPath();
+                ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = 'rgba(255,255,255,0.75)';
+            ctx.font = '10px "Inter", "Microsoft YaHei", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i < labels.length; i++) {
+                const angle = startAngle + i * angleStep;
+                const x = centerX + Math.cos(angle) * (radius + 22);
+                const y = centerY + Math.sin(angle) * (radius + 22);
+                ctx.fillText(labels[i], x, y);
+            }
+
+            ctx.fillStyle = 'rgba(0,255,255,0.95)';
+            ctx.font = 'bold 13px "Inter", "Microsoft YaHei", sans-serif';
+            ctx.fillText('INTP', centerX, centerY);
+        }
+
+        // 背景星空画布
+        const bgCanvas = document.getElementById('bg-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let bgParticles = [];
+        function initBg() { bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight; bgParticles = []; for(let i=0; i<30; i++) bgParticles.push({x: Math.random()*bgCanvas.width, y: Math.random()*bgCanvas.height, s: Math.random()*1, sp: 0.1}); }
+        function drawBg() { bgCtx.fillStyle = '#000'; bgCtx.fillRect(0,0,bgCanvas.width,bgCanvas.height); bgCtx.fillStyle = 'rgba(0, 255, 255, 0.1)'; bgParticles.forEach(p => { bgCtx.beginPath(); bgCtx.arc(p.x, p.y, p.s, 0, Math.PI*2); bgCtx.fill(); p.y -= p.sp; if(p.y < 0) p.y = bgCanvas.height; }); requestAnimationFrame(drawBg); }
+        initBg(); drawBg();
+
+        // 侧边导航同步
+        const container = document.getElementById('main-container');
+        const dots = document.querySelectorAll('.nav-dot');
+        container.addEventListener('scroll', () => {
+            const index = Math.round(container.scrollTop / window.innerHeight);
+            dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+        });
+
+        // 3D 粒子交互
+        let scene, camera, renderer, points, geometry, controls;
+        let particleCount = 6000; 
+        let currentText = '王春雷';
+
+        function init3D() {
+            const container = document.getElementById('particle-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.z = 8;
+            renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('three-canvas'), antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enablePan = false; controls.enableDamping = true; controls.minDistance = 3; controls.maxDistance = 15;
+            createParticleSystem(); updateShape(currentText); animate3D();
+        }
+
+        function createParticleSystem() {
+            if (points) scene.remove(points);
+            geometry = new THREE.BufferGeometry();
+            const pos = new Float32Array(particleCount * 3);
+            for(let i = 0; i < particleCount * 3; i++) pos[i] = (Math.random() - 0.5) * 15;
+            geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            points = new THREE.Points(geometry, new THREE.PointsMaterial({ size: 0.045, color: new THREE.Color(document.getElementById('particle-color').value), transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending, depthWrite: false }));
+            scene.add(points);
+        }
+
+        function getTextImageData(text) {
+            const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+            canvas.width = 150; canvas.height = 150; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = 'bold 32px Arial'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 75, 75);
+            const data = ctx.getImageData(0, 0, 150, 150).data; const coords = [];
+            for (let y = 0; y < 150; y += 2) { for (let x = 0; x < 150; x += 2) { if (data[(y*150+x)*4] > 128) coords.push({ x: (x-75)*0.13, y: (75-y)*0.13, z: (Math.random()-0.5)*0.8 }); } }
+            return coords;
+        }
+
+        function updateShape(text) {
+            currentText = text; const coords = getTextImageData(text); const pos = geometry.attributes.position.array;
+            for (let i = 0; i < particleCount; i++) { const t = coords[i % coords.length]; const i3 = i * 3; new TWEEN.Tween(pos).to({ [i3]: t.x, [i3+1]: t.y, [i3+2]: t.z }, 1500).easing(TWEEN.Easing.Quadratic.InOut).start(); }
+        }
+
+        function animate3D(time) { requestAnimationFrame(animate3D); TWEEN.update(time); controls.update(); if(geometry) geometry.attributes.position.needsUpdate = true; renderer.render(scene, camera); }
+
+        document.getElementById('density-slider').addEventListener('input', (e) => { particleCount = parseInt(e.target.value); document.getElementById('density-val').innerText = particleCount; createParticleSystem(); updateShape(currentText); });
+        document.getElementById('particle-color').addEventListener('input', (e) => points.material.color.set(e.target.value));
+        document.getElementById('bg-color').addEventListener('input', (e) => document.getElementById('love').style.backgroundColor = e.target.value);
+        document.getElementById('char-input').addEventListener('change', (e) => updateShape(e.target.value));
+        
+        window.addEventListener('resize', () => { initBg(); const container = document.getElementById('particle-container'); camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(container.clientWidth, container.clientHeight); drawMbtiRadar(); });
+        drawMbtiRadar();
+        init3D();
+    </script>
+</body>
+</html>
