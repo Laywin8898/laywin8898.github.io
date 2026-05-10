@@ -88,7 +88,6 @@
             opacity: 1;
             transform: translateX(-50%) translateY(0);
         }
-        
         #particle-container { touch-action: pan-y !important; }
         input[type=range] { -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: #00FFFF; box-shadow: 0 0 8px #00FFFF; margin-top: -4px; }
@@ -126,24 +125,24 @@
             <div class="grid grid-cols-2 gap-3 mt-4">
                 
                 <div class="nav-tile h-28" onclick="scrollToSection('agent')">
-                    <span class="text-lg font-bold text-cyan-400">Agent</span>
-                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">我可以做什么</span>
+                    <span class="text-[22px] font-black text-cyan-300 tracking-wide">Agent</span>
+                    <span class="text-[11px] text-gray-300 uppercase tracking-[0.18em] font-semibold">我可以做什么</span>
                 </div>
                 <div class="nav-tile h-28" onclick="scrollToSection('skills')">
-                    <span class="text-lg font-bold text-cyan-400">SKILL</span>
-                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">我有哪些技能</span>
+                    <span class="text-[22px] font-black text-cyan-300 tracking-wide">SKILL</span>
+                    <span class="text-[11px] text-gray-300 uppercase tracking-[0.18em] font-semibold">我有哪些技能</span>
                 </div>
                 <div class="nav-tile h-28" onclick="scrollToSection('experience')">
-                    <span class="text-lg font-bold text-cyan-400">MEMORY.md</span>
-                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">过往履历</span>
+                    <span class="text-[22px] font-black text-cyan-300 tracking-wide">MEMORY.md</span>
+                    <span class="text-[11px] text-gray-300 uppercase tracking-[0.18em] font-semibold">过往履历</span>
                 </div>
                 <div class="nav-tile h-28" onclick="scrollToSection('love')">
-                    <span class="text-lg font-bold text-cyan-400">100 ℃</span>
-                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">我的热爱</span>
+                    <span class="text-[22px] font-black text-cyan-300 tracking-wide">100 ℃</span>
+                    <span class="text-[11px] text-gray-300 uppercase tracking-[0.18em] font-semibold">我的热爱</span>
                 </div>
                 <div class="nav-tile h-20 col-span-2" onclick="scrollToSection('about')">
-                    <span class="text-lg font-bold text-cyan-400">README</span>
-                    <span class="text-[8px] text-gray-500 uppercase tracking-widest">关于我</span>
+                    <span class="text-[22px] font-black text-cyan-300 tracking-wide">README</span>
+                    <span class="text-[11px] text-gray-300 uppercase tracking-[0.18em] font-semibold">关于我</span>
                 </div>
             </div>
         </section>
@@ -386,10 +385,10 @@
 
         <section id="love" class="relative overflow-hidden p-0 flex flex-col">
             <h2 class="section-title absolute top-10 left-6 z-50">100 ℃我的热爱</h2>
-            <div id="particle-container" class="w-full flex-grow relative touch-none">
+            <div id="particle-container" class="w-full h-[56vh] relative touch-none">
                 <canvas id="three-canvas" class="w-full h-full"></canvas>
             </div>
-            <div class="glass-card mx-6 -mt-16 mb-6 relative z-50 space-y-4">
+            <div class="glass-card mx-6 -mt-10 mb-6 relative z-50 space-y-4">
                 <div class="flex items-center justify-between">
                     <span class="text-[9px] font-mono text-cyan-400">// PTCL_V7_STABLE</span>
                     <div class="flex gap-3">
@@ -403,12 +402,16 @@
                 </div>
                 <div class="flex items-center gap-3 border-t border-white/5 pt-3">
                     <span class="text-[8px] font-mono text-gray-500">SYMBOL:</span>
-                    <input type="text" id="char-input" value="王春雷" class="bg-white/5 border border-white/10 text-[10px] px-2 py-1 rounded text-cyan-400 w-full outline-none">
+                    <input type="text" id="char-input" value="球形（可手动输入文字）" class="bg-white/5 border border-white/10 text-[10px] px-2 py-1 rounded text-cyan-400 w-full outline-none">
                 </div>
-                <div class="grid grid-cols-3 gap-2 mt-2">
+                <div class="grid grid-cols-4 gap-2 mt-2">
                     <button class="nav-tile py-2 text-[9px] font-bold" onclick="updateShape('玩AI')">玩AI</button>
                     <button class="nav-tile py-2 text-[9px] font-bold" onclick="updateShape('滑雪')">滑雪</button>
                     <button class="nav-tile py-2 text-[9px] font-bold" onclick="updateShape('路亚')">路亚</button>
+                    <button class="nav-tile py-2 text-[9px] font-bold" onclick="updateShape('穿越机')">穿越机</button>
+                    <button class="nav-tile py-2 text-[9px] font-bold" onclick="updateShape('画画')">画画</button>
+                    <button class="nav-tile py-2 text-[9px] font-bold" onclick="updateShape('摄影')">摄影</button>
+                    <button class="nav-tile py-2 text-[9px] font-bold" onclick="updateShape('户外露营')">户外露营</button>
                 </div>
             </div>
         </section>
@@ -416,6 +419,19 @@
         <section id="about" class="no-scrollbar overflow-y-auto">
             <h2 class="section-title mb-8">README（关于我）</h2>
             <div class="space-y-4">
+                <div class="bg-white/5 border border-cyan-500/20 rounded-xl p-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-[150px_1fr] gap-4 items-center">
+                        <div class="w-full sm:w-[150px] h-[190px] rounded-lg overflow-hidden border border-cyan-500/30 shadow-[0_0_14px_rgba(0,255,255,0.25)]">
+                            <img src="zjz.jpg" alt="王春雷照片" class="w-full h-full object-cover">
+                        </div>
+                        <div class="space-y-2">
+                            <p class="text-[9px] tracking-[0.25em] text-gray-500 uppercase font-mono">Digital Portrait</p>
+                            <p class="text-cyan-300 text-lg font-black tracking-wide">王春雷 · WANGCHUNLEI</p>
+                            <p class="text-[11px] text-gray-300 leading-relaxed">12年10个月增长与商业化经验，擅长投放增长、数据分析、商务BD与AI提效，目标在新机会中持续放大业务增长价值。</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="agent-card expanded !max-h-none !mb-0">
                     <div class="card-header !cursor-default">
                         <div class="flex flex-col gap-2">
@@ -605,7 +621,10 @@
         // 3D 粒子交互
         let scene, camera, renderer, points, geometry, controls;
         let particleCount = 6000; 
-        let currentText = '王春雷';
+        let currentText = '__DEFAULT_SPHERE__';
+        let defaultPhotoCoords = null;
+        let isDefaultPhotoLoading = false;
+        const DEFAULT_PHOTO_SRC = 'file:///C:/Users/baba/.cursor/projects/e/assets/c__Users_baba_AppData_Roaming_Cursor_User_workspaceStorage_6dcd039623852182a9e36912648bb5dc_images_61e0e776c80cca29cc1d1efa0302c831-d35f1562-a937-49af-a2f9-bb12fa6640f8.png';
 
         function init3D() {
             const container = document.getElementById('particle-container');
@@ -632,15 +651,112 @@
         function getTextImageData(text) {
             const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
             canvas.width = 150; canvas.height = 150; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.font = 'bold 32px Arial'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 75, 75);
+            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            const label = (text || '').trim();
+            const defaultHobbies = '玩AI 滑雪 路亚 穿越机 画画 摄影 户外露营';
+            if (label === defaultHobbies) {
+                ctx.font = 'bold 16px Arial';
+                ctx.fillText('玩AI 滑雪 路亚', 75, 55);
+                ctx.fillText('穿越机 画画 摄影', 75, 78);
+                ctx.fillText('户外露营', 75, 101);
+            } else {
+                const fontSize = label.length > 6 ? 20 : 32;
+                ctx.font = `bold ${fontSize}px Arial`;
+                ctx.fillText(label, 75, 75);
+            }
             const data = ctx.getImageData(0, 0, 150, 150).data; const coords = [];
             for (let y = 0; y < 150; y += 2) { for (let x = 0; x < 150; x += 2) { if (data[(y*150+x)*4] > 128) coords.push({ x: (x-75)*0.13, y: (75-y)*0.13, z: (Math.random()-0.5)*0.8 }); } }
             return coords;
         }
 
-        function updateShape(text) {
-            currentText = text; const coords = getTextImageData(text); const pos = geometry.attributes.position.array;
+        function getPhotoSilhouetteCoords(image) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 180;
+            canvas.height = 180;
+            ctx.fillStyle = '#d9e4f2';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const scale = Math.min(canvas.width / image.width, canvas.height / image.height);
+            const drawW = image.width * scale;
+            const drawH = image.height * scale;
+            const dx = (canvas.width - drawW) / 2;
+            const dy = (canvas.height - drawH) / 2;
+            ctx.drawImage(image, dx, dy, drawW, drawH);
+
+            const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            const coords = [];
+            for (let y = 0; y < canvas.height; y += 2) {
+                for (let x = 0; x < canvas.width; x += 2) {
+                    const i = (y * canvas.width + x) * 4;
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+                    if (luminance < 95) {
+                        coords.push({
+                            x: (x - canvas.width / 2) * 0.11,
+                            y: (canvas.height / 2 - y) * 0.11,
+                            z: (Math.random() - 0.5) * 0.9
+                        });
+                    }
+                }
+            }
+            return coords;
+        }
+
+        function animateToCoords(coords) {
+            if (!coords || !coords.length) return;
+            const pos = geometry.attributes.position.array;
             for (let i = 0; i < particleCount; i++) { const t = coords[i % coords.length]; const i3 = i * 3; new TWEEN.Tween(pos).to({ [i3]: t.x, [i3+1]: t.y, [i3+2]: t.z }, 1500).easing(TWEEN.Easing.Quadratic.InOut).start(); }
+        }
+
+        function getSphereCoords() {
+            const coords = [];
+            const radius = 3.1;
+            for (let i = 0; i < particleCount; i++) {
+                const u = Math.random();
+                const v = Math.random();
+                const theta = 2 * Math.PI * u;
+                const phi = Math.acos(2 * v - 1);
+                const r = radius * (0.85 + Math.random() * 0.2);
+                coords.push({
+                    x: r * Math.sin(phi) * Math.cos(theta),
+                    y: r * Math.cos(phi),
+                    z: r * Math.sin(phi) * Math.sin(theta)
+                });
+            }
+            return coords;
+        }
+
+        function updateShape(text) {
+            currentText = text;
+            if (text === '__DEFAULT_SPHERE__') {
+                animateToCoords(getSphereCoords());
+                return;
+            }
+            if (text === '__DEFAULT_PHOTO__') {
+                if (defaultPhotoCoords && defaultPhotoCoords.length) {
+                    animateToCoords(defaultPhotoCoords);
+                    return;
+                }
+                if (isDefaultPhotoLoading) return;
+                isDefaultPhotoLoading = true;
+                const img = new Image();
+                img.onload = () => {
+                    defaultPhotoCoords = getPhotoSilhouetteCoords(img);
+                    isDefaultPhotoLoading = false;
+                    if (defaultPhotoCoords.length) animateToCoords(defaultPhotoCoords);
+                    else animateToCoords(getTextImageData('玩AI 滑雪 路亚'));
+                };
+                img.onerror = () => {
+                    isDefaultPhotoLoading = false;
+                    animateToCoords(getTextImageData('玩AI 滑雪 路亚'));
+                };
+                img.src = DEFAULT_PHOTO_SRC;
+                return;
+            }
+            animateToCoords(getTextImageData(text));
         }
 
         function animate3D(time) { requestAnimationFrame(animate3D); TWEEN.update(time); controls.update(); if(geometry) geometry.attributes.position.needsUpdate = true; renderer.render(scene, camera); }
