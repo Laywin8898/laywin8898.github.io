@@ -88,6 +88,29 @@
             opacity: 1;
             transform: translateX(-50%) translateY(0);
         }
+        .pdf-download-btn {
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 120;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: #001414;
+            background: rgba(0, 255, 255, 0.92);
+            border: 1px solid rgba(0, 255, 255, 0.95);
+            border-radius: 999px;
+            padding: 8px 14px;
+            box-shadow: 0 0 18px rgba(0, 255, 255, 0.4);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .pdf-download-btn:active { transform: scale(0.97); }
+        .pdf-download-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
         #particle-container { touch-action: pan-y !important; }
         input[type=range] { -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: #00FFFF; box-shadow: 0 0 8px #00FFFF; margin-top: -4px; }
@@ -96,6 +119,7 @@
 </head>
 <body>
     <canvas id="bg-canvas"></canvas>
+    <button id="pdf-download-btn" class="pdf-download-btn" onclick="downloadResumePdf()">下载PDF简历</button>
 
     <div class="side-nav">
         <div class="nav-dot active" onclick="scrollToSection('home')"></div>
@@ -421,18 +445,9 @@
             <div class="space-y-4">
                 <div class="agent-card expanded !max-h-none !mb-0">
                     <div class="card-header !cursor-default">
-                        <div class="flex flex-col gap-2 w-full">
+                        <div class="flex flex-col gap-2">
                             <p class="text-[9px] tracking-[0.25em] text-gray-500 uppercase font-mono">Who Am I</p>
-                            <div class="flex items-start gap-4">
-                                <div class="w-[106px] h-[132px] rounded-lg overflow-hidden border border-cyan-500/30 shadow-[0_0_14px_rgba(0,255,255,0.2)] flex-shrink-0">
-                                    <img src="zjz.jpg" alt="王春雷照片" class="w-full h-full object-cover">
-                                </div>
-                                <div class="flex flex-col gap-2 min-w-0">
-                                    <h3 class="text-white text-2xl font-black tracking-tight leading-none">王春雷</h3>
-                                    <p class="text-cyan-300 text-xs font-semibold tracking-wide">WANGCHUNLEI</p>
-                                    <p class="text-[11px] text-gray-300 leading-relaxed">12年10个月增长与商业化经验，擅长投放增长、数据分析、商务BD与AI提效。</p>
-                                </div>
-                            </div>
+                            <h3 class="text-white text-2xl font-black tracking-tight">王春雷</h3>
                             <div class="flex gap-1 flex-wrap">
                                 <span class="tag">12年10个月</span>
                                 <span class="tag">北京</span>
@@ -483,6 +498,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <script>
         function scrollToSection(id) { const target = document.getElementById(id); if(target) document.getElementById('main-container').scrollTo({ top: target.offsetTop, behavior: 'smooth' }); }
@@ -504,6 +520,83 @@
             navigator.clipboard.writeText(text)
                 .then(() => showCopyToast(successMsg || '已复制'))
                 .catch(() => showCopyToast('复制失败，请手动复制'));
+        }
+
+        async function downloadResumePdf() {
+            const btn = document.getElementById('pdf-download-btn');
+            const main = document.getElementById('main-container');
+            const sections = Array.from(document.querySelectorAll('section'));
+            const cards = Array.from(document.querySelectorAll('.agent-card'));
+            const loveSection = document.getElementById('love');
+            const particleContainer = document.getElementById('particle-container');
+            const pdfFilename = '王春雷-简历.pdf';
+
+            const cardStates = cards.map(card => card.classList.contains('expanded'));
+            const htmlStyle = document.documentElement.style.cssText;
+            const bodyStyle = document.body.style.cssText;
+            const mainStyle = main.style.cssText;
+            const sectionStyles = sections.map(sec => sec.style.cssText);
+            const loveStyle = loveSection ? loveSection.style.cssText : '';
+            const particleStyle = particleContainer ? particleContainer.style.cssText : '';
+            const mainBg = main.style.backgroundColor;
+
+            try {
+                btn.disabled = true;
+                btn.textContent = 'PDF生成中...';
+
+                cards.forEach(card => card.classList.add('expanded'));
+                document.documentElement.style.height = 'auto';
+                document.documentElement.style.overflow = 'visible';
+                document.body.style.height = 'auto';
+                document.body.style.overflow = 'visible';
+                main.style.height = 'auto';
+                main.style.overflow = 'visible';
+                main.style.scrollSnapType = 'none';
+                main.style.scrollBehavior = 'auto';
+                main.style.backgroundColor = '#000000';
+
+                sections.forEach(sec => {
+                    sec.style.minHeight = 'auto';
+                    sec.style.scrollSnapAlign = 'none';
+                    sec.style.height = 'auto';
+                });
+                if (loveSection) loveSection.style.overflow = 'visible';
+                if (particleContainer) particleContainer.style.height = '420px';
+
+                window.scrollTo(0, 0);
+                await new Promise(resolve => setTimeout(resolve, 320));
+
+                const opt = {
+                    margin: [0, 0, 0, 0],
+                    filename: pdfFilename,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#000000',
+                        scrollX: 0,
+                        scrollY: 0
+                    },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                    pagebreak: { mode: ['css', 'legacy'] }
+                };
+
+                await html2pdf().set(opt).from(main).save();
+                showCopyToast('PDF已下载');
+            } catch (err) {
+                showCopyToast('PDF生成失败，请重试');
+            } finally {
+                cards.forEach((card, i) => card.classList.toggle('expanded', cardStates[i]));
+                document.documentElement.style.cssText = htmlStyle;
+                document.body.style.cssText = bodyStyle;
+                main.style.cssText = mainStyle;
+                main.style.backgroundColor = mainBg;
+                sections.forEach((sec, i) => { sec.style.cssText = sectionStyles[i]; });
+                if (loveSection) loveSection.style.cssText = loveStyle;
+                if (particleContainer) particleContainer.style.cssText = particleStyle;
+                btn.disabled = false;
+                btn.textContent = '下载PDF简历';
+            }
         }
 
         function drawMbtiRadar() {
@@ -620,7 +713,7 @@
         let currentText = '__DEFAULT_SPHERE__';
         let defaultPhotoCoords = null;
         let isDefaultPhotoLoading = false;
-        const DEFAULT_PHOTO_SRC = 'file:///C:/Users/baba/.cursor/projects/e/assets/c__Users_baba_AppData_Roaming_Cursor_User_workspaceStorage_6dcd039623852182a9e36912648bb5dc_images_61e0e776c80cca29cc1d1efa0302c831-d35f1562-a937-49af-a2f9-bb12fa6640f8.png';
+        const DEFAULT_PHOTO_SRC = 'zjz.jpg';
 
         function init3D() {
             const container = document.getElementById('particle-container');
